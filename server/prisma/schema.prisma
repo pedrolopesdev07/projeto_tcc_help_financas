@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model usuarios {
+  id                    String              @id @default(uuid())
+  nome                  String
+  email                 String              @unique
+  senha_hash            String
+  renda_mensal          Decimal?
+  // 1. Removemos o @default daqui para o fluxo do onboarding fazer sentido
+  estrategia_financeira String?             
+  onboarding_concluido  Boolean             @default(false)
+  criado_em             DateTime            @default(now())
+  atualizado_em         DateTime            @updatedAt
+  
+  // 2. CORREÇÃO: Mudado de perfis_financeiros[] para apenas o objeto opcional (Relacionamento 1:1)
+  perfil_financeiro     perfis_financeiros? 
+  
+  categorias            categorias[]
+  transacoes            transacoes[]
+  metas                 metas[]
+  orcamentos            orcamentos[]
+  refresh_tokens        refresh_tokens[]
+}
+
+model perfis_financeiros {
+  id                 String   @id @default(uuid())
+  usuario_id         String   @unique
+  objetivo_principal String
+  perfil_consumidor  String
+  dependentes        Int
+  config_estrategia  Json?
+  criado_em          DateTime @default(now())
+  usuario            usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+model categorias {
+  id              String      @id @default(uuid())
+  usuario_id      String?
+  nome            String
+  tipo            String
+  grupo_estrategia String?
+  icone           String?
+  cor             String?
+  eh_padrao       Boolean     @default(false)
+  criado_em       DateTime    @default(now())
+  usuario         usuarios?   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  transacoes      transacoes[]
+}
+
+model transacoes {
+  id          String      @id @default(uuid())
+  usuario_id  String
+  categoria_id String?
+  tipo        String
+  valor       Decimal
+  descricao   String?
+  data        DateTime
+  recorrencia String
+  criado_em   DateTime    @default(now())
+  atualizado_em DateTime  @updatedAt
+  usuario     usuarios    @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  categoria   categorias? @relation(fields: [categoria_id], references: [id], onDelete: SetNull)
+}
+
+model metas {
+  id          String   @id @default(uuid())
+  usuario_id  String
+  nome        String
+  tipo_meta   String
+  valor_total Decimal
+  valor_atual Decimal
+  data_limite DateTime
+  status      String   @default("ativa")
+  criado_em   DateTime @default(now())
+  atualizado_em DateTime @updatedAt
+  usuario     usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+model orcamentos {
+  id                   String   @id @default(uuid())
+  usuario_id           String
+  mes                  Int
+  ano                  Int
+  estrategia           String
+  limite_essencial     Decimal
+  limite_desejo        Decimal
+  limite_prioridade    Decimal
+  config_personalizada Json?
+  criado_em            DateTime @default(now())
+  usuario              usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@unique([usuario_id, mes, ano])
+}
+
+model refresh_tokens {
+  id         String   @id @default(uuid())
+  usuario_id String
+  token      String   @unique
+  expires_em DateTime
+  criado_em  DateTime @default(now())
+  usuario    usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
