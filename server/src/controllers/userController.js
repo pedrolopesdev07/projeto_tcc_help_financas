@@ -4,7 +4,7 @@ import prisma from '../models/prismaClient.js';
 export async function getMe(req, res) {
   const user = await prisma.usuarios.findUnique({
     where: { id: req.userId },
-    include: { perfis_financeiros: true }
+    include: { perfil_financeiro: true }
   });
 
   if (!user) {
@@ -38,7 +38,7 @@ export async function updateMe(req, res) {
   }
 
   if (config_estrategia !== undefined) {
-    await prisma.perfis_financeiros.upsert({
+    prisma.perfis_financeiros.upsert({
       where: { usuario_id: req.userId },
       create: {
         usuario_id: req.userId,
@@ -56,7 +56,7 @@ export async function updateMe(req, res) {
   const user = await prisma.usuarios.update({
     where: { id: req.userId },
     data: updates,
-    include: { perfis_financeiros: true }
+    include: { perfil_financeiro: true }
   });
 
   const { senha_hash, ...safeUser } = user;
